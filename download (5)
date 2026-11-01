@@ -1,4 +1,0 @@
-releases/*
-!releases/.gitkeep
-nightly/*
-!nightly/.gitkeep
