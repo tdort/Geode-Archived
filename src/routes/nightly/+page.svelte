@@ -3,6 +3,7 @@
     import Card from "$lib/components/Card.svelte";
     import Waves from "$lib/components/Waves.svelte";
     import InfoBox from "$lib/components/InfoBox.svelte";
+    import Label from "$lib/components/Label.svelte";
     import { nightlies, commitUrl, formatDate, formatSize } from "$lib/archive";
 </script>
 
@@ -17,7 +18,7 @@
         <InfoBox type="info">
             GitHub only keeps the latest nightly, because the <code>nightly</code> release is overwritten on every build.
             This list is built from snapshots taken by the sync job, so it starts when archiving started and has one entry
-            per commit the job saw. Builds between two snapshots were never captured.
+            per commit the job saw. Entries marked rebuilt were compiled again from the old commit because the original artifacts had expired; they are not byte-identical to the originals.
         </InfoBox>
 
         {#each nightlies as n (n.commit)}
@@ -25,9 +26,10 @@
                 <div class="block">
                     <h2>
                         <a href={commitUrl(n.commit)} target="_blank" rel="noreferrer"><code>{n.commit.slice(0, 8)}</code></a>
+                        {#if n.capturedFrom === "rebuilt"}<Label design="secondary">rebuilt</Label>{:else if n.capturedFrom === "original"}<Label design="accent">original</Label>{/if}
                     </h2>
                     <p class="dim">
-                        Commit date {formatDate(n.date)} &middot; captured {formatDate(n.capturedAt)}
+                        Commit date {formatDate(n.date)} &middot; {n.capturedFrom === "rebuilt" ? "rebuilt" : "captured"} {formatDate(n.capturedAt)}
                     </p>
                     {#if n.assets.length}
                         <table>

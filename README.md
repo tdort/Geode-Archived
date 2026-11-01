@@ -18,6 +18,18 @@ Upstream publishes nightlies by overwriting a single `nightly` release, so GitHu
 This archive can only hold nightlies from the moment the sync job first saw them: one entry per distinct commit.
 For a gap-free record, keep the hourly job running and let it commit its snapshots.
 
+## Backfilling old nightlies
+
+`scripts/backfill.mjs` walks upstream's "Build Binaries" runs. If a run's artifacts still exist it downloads them
+(`original`); if they expired it pushes that commit to your fork, runs the same workflow there on GitHub's runners
+(so macOS and iOS get built too), and downloads the result (`rebuilt`). Files go to `files/nightly/<commit>/`.
+Rebuilds are not byte-identical to the originals, and some old commits will no longer build
+(logged in `src/lib/data/backfill-failed.json`).
+
+```bash
+node scripts/backfill.mjs --fork you/geode --repo-dir ../geode --since 2025-01-01 --every 1 --limit 25 --dry-run
+```
+
 ## Files are linked, not hosted
 
 File entries link to the original GitHub release assets. If you want the archive to survive upstream deletions,

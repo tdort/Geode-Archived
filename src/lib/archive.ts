@@ -24,7 +24,8 @@ export interface Nightly {
     commit: string;
     date: string;
     capturedAt: string;
-    capturedFrom: "git" | "api";
+    capturedFrom: "git" | "api" | "original" | "rebuilt";
+    sourceRun?: number;
     assets: Asset[];
 }
 

@@ -9,7 +9,8 @@
         "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
         "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
         "format": "prettier --write .",
-        "sync": "node scripts/sync.mjs"
+        "sync": "node scripts/sync.mjs",
+        "backfill": "node scripts/backfill.mjs"
     },
     "devDependencies": {
         "@types/node": "^24.13.6",
