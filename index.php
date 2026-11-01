@@ -58,9 +58,12 @@ function page_index() {
 
     head('', 'releases');
     ?>
-    <h1><?= h(config()['title']) ?></h1>
+    <div class="hero">
+        <?php logo(); ?>
+        <h1><?= h(config()['title']) ?></h1>
+    </div>
     <p class="lead"><?= h(config()['intro']) ?></p>
-    <p class="dim">
+    <p class="dim counts">
         <?= $counts['stable'] ?> stable, <?= $counts['beta'] ?> beta, <?= $counts['alpha'] ?> alpha
         &middot; <?= count($hosted) ?> with files here
         &middot; <?= count(nightlies()) ?> nightlies
@@ -131,7 +134,7 @@ function page_version($tag) {
         <?php endif; ?>
     </p>
     <p>
-        <a class="btn" href="https://github.com/<?= h($repo) ?>/releases/tag/<?= h(rawurlencode($tag)) ?>">GitHub release</a>
+        <a class="btn filled" href="https://github.com/<?= h($repo) ?>/releases/tag/<?= h(rawurlencode($tag)) ?>">GitHub release</a>
         <?php if ($older): ?><a class="btn" href="<?= h(url('v/' . $older['tag'])) ?>">&larr; <?= h($older['tag']) ?></a><?php endif; ?>
         <?php if ($newer): ?><a class="btn" href="<?= h(url('v/' . $newer['tag'])) ?>"><?= h($newer['tag']) ?> &rarr;</a><?php endif; ?>
     </p>
