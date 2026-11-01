@@ -27,21 +27,46 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
-const { values: args } = parseArgs({
+const { values: flags } = parseArgs({
     options: {
-        upstream: { type: "string", default: "geode-sdk/geode" },
+        config: { type: "string" },
+        upstream: { type: "string" },
         fork: { type: "string" },
         "repo-dir": { type: "string" },
-        workflow: { type: "string", default: "build.yml" },
+        workflow: { type: "string" },
         since: { type: "string" },
-        every: { type: "string", default: "1" },
-        limit: { type: "string", default: "25" },
-        concurrency: { type: "string", default: "2" },
+        every: { type: "string" },
+        limit: { type: "string" },
+        concurrency: { type: "string" },
         "dry-run": { type: "boolean", default: false },
     },
 });
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+// settings come from archive.config.json; command-line flags override it
+const CONFIG_PATH = flags.config ?? join(ROOT, "archive.config.json");
+const config = existsSync(CONFIG_PATH) ? JSON.parse(readFileSync(CONFIG_PATH, "utf8")) : {};
+const pick = (flag, key, fallback) => flags[flag] ?? config[key] ?? fallback;
+const args = {
+    upstream: pick("upstream", "upstream", "geode-sdk/geode"),
+    fork: pick("fork", "fork", undefined),
+    "repo-dir": pick("repo-dir", "repoDir", undefined),
+    workflow: pick("workflow", "workflow", "build.yml"),
+    since: pick("since", "since", undefined),
+    every: String(pick("every", "every", 1)),
+    limit: String(pick("limit", "limit", 25)),
+    concurrency: String(pick("concurrency", "concurrency", 2)),
+    "dry-run": flags["dry-run"],
+};
+// commit hashes (full or a unique prefix) to always archive / never archive
+const INCLUDE = (config.include ?? []).map((s) => s.toLowerCase());
+const EXCLUDE = (config.exclude ?? []).map((s) => s.toLowerCase());
+const matches = (sha, list) => list.some((p) => sha.toLowerCase().startsWith(p));
+if (args.fork?.startsWith("YOUR-USERNAME")) {
+    console.error("Set \"fork\" in archive.config.json to your fork of geode-sdk/geode first.");
+    process.exit(2);
+}
 const FILES_DIR = join(ROOT, "files", "nightly");
 const NIGHTLIES_PATH = join(ROOT, "src", "lib", "data", "nightlies.json");
 const FAILED_PATH = join(ROOT, "src", "lib", "data", "backfill-failed.json");
@@ -77,10 +102,23 @@ function listRuns() {
         "run", "list", "-R", UPSTREAM, "-w", args.workflow, "-b", "main", "--status", "success",
         "--json", "databaseId,headSha,createdAt,event", "--limit", "1000",
     );
-    let out = runs
+    const all = runs
         .filter((r) => r.event === "push" || r.event === "workflow_dispatch")
-        .filter((r) => !args.since || Date.parse(r.createdAt) >= Date.parse(args.since))
+        .filter((r) => !matches(r.headSha, EXCLUDE))
         .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+
+    // commits listed under "include" are always kept (newest run per commit), regardless of --since / --every
+    const included = new Map();
+    for (const r of all) {
+        if (matches(r.headSha, INCLUDE) && !included.has(r.headSha)) included.set(r.headSha, r);
+    }
+    for (const p of INCLUDE) {
+        if (![...included.keys()].some((sha) => sha.toLowerCase().startsWith(p))) {
+            console.warn(`include: no successful run found for commit ${p}`);
+        }
+    }
+
+    let out = all.filter((r) => !args.since || Date.parse(r.createdAt) >= Date.parse(args.since));
     if (EVERY > 0) {
         // newest run in each N-day bucket
         const seen = new Set();
@@ -91,7 +129,10 @@ function listRuns() {
             return true;
         });
     }
-    return out;
+    const have = new Set(out.map((r) => r.headSha));
+    return [...out, ...[...included.values()].filter((r) => !have.has(r.headSha))].sort(
+        (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
+    );
 }
 
 const liveArtifacts = (runId) =>

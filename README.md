@@ -26,9 +26,16 @@ For a gap-free record, keep the hourly job running and let it commit its snapsho
 Rebuilds are not byte-identical to the originals, and some old commits will no longer build
 (logged in `src/lib/data/backfill-failed.json`).
 
+Everything is configured in `archive.config.json` (fork, date range, one-per-N-days sampling, batch size).
+To add specific nightlies, list their commit hashes (full or a unique prefix) under `include`; they are archived
+even if the sampling would skip them. `exclude` skips commits. Then run:
+
 ```bash
-node scripts/backfill.mjs --fork you/geode --repo-dir ../geode --since 2025-01-01 --every 1 --limit 25 --dry-run
+npm run backfill -- --dry-run   # show the plan
+npm run backfill                # do it; re-run to continue in batches
 ```
+
+Command-line flags (`--fork`, `--since`, `--limit`, ...) override the config.
 
 ## Files are linked, not hosted
 
