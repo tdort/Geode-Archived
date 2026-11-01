@@ -1,3 +1,5 @@
+## THIS BRANCH IS NO LONGER MAINTAINED. WE HAVE SINCE SWITCHED TO [PHP](https://github.com/tdort/Geode-Archived/tree/php)
+
 # Geode Archive
 
 A static archive of every Geode loader release (stable, beta, alpha) and snapshots of the rolling nightly build.
